@@ -12,7 +12,7 @@ dependencies = [
   "python-dotenv>=1.0",
   "structlog>=24.1",
   "playwright>=1.59.0",
-  "pypdf>=6.11.0",
+  "pypdf>=6.12.0",
   # Security fixes — pin transitive deps to patched versions
   "urllib3>=2.7.0",
   "aiohttp>=3.14.0",
