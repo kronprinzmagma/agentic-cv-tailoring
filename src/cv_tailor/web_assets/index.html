@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cv-tailor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8f5;
+      --panel: #ffffff;
+      --ink: #1f2523;
+      --muted: #66716c;
+      --line: #d9ded8;
+      --accent: #0f766e;
+      --accent-dark: #115e59;
+      --danger: #b42318;
+      --soft: #edf6f4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfa;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      min-height: calc(100vh - 66px);
+    }
+    aside {
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+    }
+    section {
+      min-width: 0;
+      padding: 22px;
+    }
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 11px;
+      font: inherit;
+    }
+    textarea {
+      min-height: 300px;
+      resize: vertical;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px dashed #a7b1ad;
+      border-radius: 6px;
+      background: #fbfcfa;
+    }
+    button {
+      border: 0;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      padding: 10px 13px;
+    }
+    button:hover { background: var(--accent-dark); }
+    button:disabled {
+      cursor: wait;
+      opacity: .62;
+    }
+    .secondary {
+      background: #e8ece9;
+      color: var(--ink);
+    }
+    .secondary:hover { background: #dbe1dd; }
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .status {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 12px;
+      min-height: 68px;
+    }
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      margin-bottom: 4px;
+    }
+    .metric strong {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+    }
+    .tabs button {
+      min-height: 38px;
+    }
+    a.secondary {
+      display: inline-block;
+      text-decoration: none;
+      border-radius: 6px;
+      background: #e8ece9;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 700;
+      padding: 10px 13px;
+      min-height: 38px;
+      line-height: 1.45;
+      white-space: nowrap;
+    }
+    a.secondary:hover { background: #dbe1dd; }
+    .questions {
+      display: none;
+      margin: 16px 0;
+      border: 1px solid #c6d9d5;
+      border-radius: 6px;
+      background: var(--soft);
+      padding: 14px;
+    }
+    pre {
+      width: 100%;
+      min-height: 520px;
+      margin: 0;
+      overflow: auto;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 16px;
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .muted { color: var(--muted); }
+    .error { color: var(--danger); font-weight: 700; }
+    .pipeline {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+    }
+    .pipeline.visible { display: flex; }
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 5px 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--line);
+    }
+    .pipeline-step:last-child { border-bottom: 0; }
+    .step-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .pipeline-step.pending .step-icon { color: var(--muted); }
+    .pipeline-step.pending .step-icon::before { content: "○"; }
+    .pipeline-step.done .step-icon { color: var(--accent); }
+    .pipeline-step.done .step-icon::before { content: "✓"; }
+    .pipeline-step.error .step-icon { color: var(--danger); }
+    .pipeline-step.error .step-icon::before { content: "✗"; }
+    .pipeline-step.done .step-label { color: var(--muted); }
+    .pipeline-step.running .step-label { font-weight: 650; }
+    .step-detail { color: var(--muted); font-size: 12px; margin-left: 2px; }
+    @keyframes pipeline-spin { to { transform: rotate(360deg); } }
+    .spin-ring {
+      width: 13px;
+      height: 13px;
+      border: 2px solid var(--line);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: pipeline-spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--line); }
+      .status { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      header { align-items: flex-start; flex-direction: column; padding: 16px; }
+      aside, section { padding: 16px; }
+      .status { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>cv-tailor</h1>
+    <div class="muted">Lokale CV-Anpassung pro Stellenanzeige</div>
+  </header>
+  <main>
+    <aside>
+      <div class="row">
+        <input id="fileInput" type="file" accept=".md,.txt,.text">
+      </div>
+      <label for="filename">Dateiname</label>
+      <input id="filename" type="text" value="stellenanzeige.md">
+      <label for="posting">Stellenanzeige</label>
+      <textarea id="posting" placeholder="Anzeige hier einfügen oder Datei auswählen"></textarea>
+      <div class="row" style="margin-top:12px">
+        <button id="startBtn">Run starten</button>
+        <button id="clearBtn" class="secondary" type="button">Leeren</button>
+      </div>
+      <p id="formMessage" class="muted"></p>
+      <div id="runListSection" style="margin-top:18px; display:none">
+        <label style="display:block; margin-bottom:6px; font-weight:650">Offene Läufe</label>
+        <div id="runList"></div>
+      </div>
+    </aside>
+    <section>
+      <div class="status">
+        <div class="metric"><span>Status</span><strong id="status">Bereit</strong></div>
+        <div class="metric"><span>Schritt</span><strong id="stage">-</strong></div>
+        <div class="metric"><span>Run</span><strong id="runId">-</strong></div>
+        <div class="metric"><span>Aktualisiert</span><strong id="updatedAt">-</strong></div>
+        <div class="metric" title="LLM-Kosten + Calls (aus logs/YYYY-MM/llm_calls.jsonl). Hover-Details zeigen Aufschlüsselung pro Agent."><span>Kosten</span><strong id="cost">—</strong></div>
+      </div>
+      <div id="errorBox" class="error"></div>
+      <div id="pipeline" class="pipeline"></div>
+      <div id="qualityWarningBox" class="questions" style="display:none; border-color:#b9622d; background:#fff1e6">
+        <label style="color:#9a3f10">Qualitäts-Regression entdeckt (vs. Median der letzten Runs)</label>
+        <pre id="qualityWarningText" style="min-height:60px"></pre>
+        <div style="font-size:12px; color:#7a3a13; margin-top:6px">Heuristisch — nicht jeder Ausschlag ist ein echtes Problem. Vergleich mit dem Trend in der Konsole: <code>uv run cv-tailor quality-trend</code>.</div>
+      </div>
+      <div id="fitWarningBox" class="questions" style="display:none; border-color:#d8a14b; background:#fff7ea">
+        <label style="color:#8a5400">Profil-Fit-Hinweise — Entscheidung erforderlich</label>
+        <pre id="fitWarningText" style="min-height:140px"></pre>
+        <div class="row" style="margin-top:10px">
+          <button id="fitCancelBtn" class="secondary" type="button">Abbrechen</button>
+          <button id="fitContinueBtn" type="button">Trotzdem fortfahren</button>
+        </div>
+      </div>
+      <div id="questionsBox" class="questions">
+        <label>Klärungsfragen</label>
+        <pre id="questionsText" style="min-height:160px"></pre>
+        <label for="answers">Deine Antworten</label>
+        <textarea id="answers" style="min-height:140px" placeholder="Antworten hier eintragen"></textarea>
+        <div class="row" style="margin-top:10px">
+          <button id="answerBtn">Antworten senden</button>
+        </div>
+      </div>
+      <div class="row" style="align-items:flex-end; margin-bottom:6px">
+        <div class="tabs" id="tabs" style="margin:0; flex:1"></div>
+        <button id="openMdBtn" type="button" class="secondary" style="display:none">📝 MD lokal öffnen</button>
+        <button id="naturaliseBtn" type="button" class="secondary" style="display:none">🪶 Naturalisation prüfen</button>
+        <button id="renderPdfBtn" type="button" style="display:none">⬇ PDF erstellen</button>
+        <a id="downloadBtn" style="display:none" class="secondary" href="#"></a>
+      </div>
+      <div id="naturalisationPanel" style="display:none; margin:10px 0 14px; border:1px solid var(--line); border-radius:6px; padding:12px; background:var(--panel)">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px">
+          <strong style="font-size:14px">Naturalisations-Vorschläge</strong>
+          <span id="naturalisationStatus" class="muted" style="font-size:12px"></span>
+          <div style="flex:1"></div>
+          <button id="natSelectAll" type="button" class="secondary" style="padding:5px 10px; font-size:12px">Alle auswählen</button>
+          <button id="natSelectNone" type="button" class="secondary" style="padding:5px 10px; font-size:12px">Keine</button>
+          <button id="natApplyBtn" type="button" style="padding:5px 12px; font-size:13px">Auswahl anwenden</button>
+          <button id="natCloseBtn" type="button" class="secondary" style="padding:5px 10px; font-size:12px">Schliessen</button>
+        </div>
+        <div id="naturalisationList"></div>
+      </div>
+      <pre id="output">Noch kein Lauf gestartet.</pre>
+    </section>
+  </main>
+  <script>
+    const fileInput = document.querySelector("#fileInput");
+    const filename = document.querySelector("#filename");
+    const posting = document.querySelector("#posting");
+    const startBtn = document.querySelector("#startBtn");
+    const clearBtn = document.querySelector("#clearBtn");
+    const answerBtn = document.querySelector("#answerBtn");
+    const answers = document.querySelector("#answers");
+    const formMessage = document.querySelector("#formMessage");
+    const statusEl = document.querySelector("#status");
+    const stageEl = document.querySelector("#stage");
+    const runIdEl = document.querySelector("#runId");
+    const updatedAtEl = document.querySelector("#updatedAt");
+    const costEl = document.querySelector("#cost");
+    const errorBox = document.querySelector("#errorBox");
+    const pipelineEl = document.querySelector("#pipeline");
+    const downloadBtn = document.querySelector("#downloadBtn");
+    const openMdBtn = document.querySelector("#openMdBtn");
+    const renderPdfBtn = document.querySelector("#renderPdfBtn");
+    const naturaliseBtn = document.querySelector("#naturaliseBtn");
+    const naturalisationPanel = document.querySelector("#naturalisationPanel");
+    const naturalisationStatus = document.querySelector("#naturalisationStatus");
+    const naturalisationList = document.querySelector("#naturalisationList");
+    const natSelectAll = document.querySelector("#natSelectAll");
+    const natSelectNone = document.querySelector("#natSelectNone");
+    const natApplyBtn = document.querySelector("#natApplyBtn");
+    const natCloseBtn = document.querySelector("#natCloseBtn");
+    let naturalisationSource = null;
+    let naturalisationSuggestions = [];
+    const questionsBox = document.querySelector("#questionsBox");
+    const questionsText = document.querySelector("#questionsText");
+    const fitWarningBox = document.querySelector("#fitWarningBox");
+    const qualityWarningBox = document.querySelector("#qualityWarningBox");
+    const qualityWarningText = document.querySelector("#qualityWarningText");
+    const fitWarningText = document.querySelector("#fitWarningText");
+    const fitContinueBtn = document.querySelector("#fitContinueBtn");
+    const fitCancelBtn = document.querySelector("#fitCancelBtn");
+    const output = document.querySelector("#output");
+    const tabs = document.querySelector("#tabs");
+    const fileLabels = {
+      "_run.log": "Run Log",
+      "_experience_activation.md": "Aktivierung",
+      "01_analyse.md": "Analyse",
+      "02_klaerungsfragen.md": "Fragen",
+      "02_antworten.md": "Antworten",
+      "_coach_questions.md": "Coach fragt",
+      "_factcheck_open_questions.md": "Factcheck-Hinweise",
+      "_redundancy.md": "Redundanz",
+      "04_final_de.md": "CV DE",
+      "04_final_en.md": "CV EN",
+      "04_final_de.pdf": "PDF DE",
+      "04_final_en.pdf": "PDF EN",
+      "05_diff.md": "Diff"
+    };
+    let jobId = null;
+    let pollTimer = null;
+    let activeTab = null;
+    const runListEl = document.querySelector("#runList");
+    const runListSection = document.querySelector("#runListSection");
+
+    async function loadRunList() {
+      try {
+        const res = await fetch("/api/runs");
+        if (!res.ok) return;
+        const data = await res.json();
+        const runs = (data.runs || []).filter(r =>
+          r.status === "paused" || r.status === "resumable" || r.status === "running" || r.status === "continuing" || r.status === "fit_warning"
+        );
+        if (runs.length === 0) {
+          runListSection.style.display = "none";
+          runListEl.innerHTML = "";
+          return;
+        }
+        runListSection.style.display = "";
+        runListEl.innerHTML = runs.map(r => {
+          const label = r.run_id || r.job_id;
+          const statusLabel = ({
+            paused: "Klärungsfragen offen",
+            resumable: "Writer unterbrochen",
+            running: "läuft …",
+            continuing: "wird fortgesetzt …",
+          })[r.status] || r.status;
+          const actionBtn = r.status === "resumable"
+            ? `<button data-action="resume" data-jid="${r.job_id}" class="secondary">Wiederaufnehmen</button>`
+            : `<button data-action="open" data-jid="${r.job_id}" class="secondary">Öffnen</button>`;
+          return `<div class="run-list-item" style="border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:6px;font-size:13px">
+            <div style="font-weight:650;overflow-wrap:anywhere">${label}</div>
+            <div class="muted" style="margin:4px 0 6px">${statusLabel}</div>
+            ${actionBtn}
+          </div>`;
+        }).join("");
+      } catch (e) { /* ignore */ }
+    }
+
+    runListEl.addEventListener("click", async (ev) => {
+      const btn = ev.target.closest("button[data-action]");
+      if (!btn) return;
+      const jid = btn.dataset.jid;
+      const action = btn.dataset.action;
+      if (action === "resume") {
+        btn.disabled = true;
+        btn.textContent = "Starte …";
+        const res = await fetch(`/api/runs/${jid}/resume`, { method: "POST" });
+        if (!res.ok) {
+          formMessage.textContent = "Resume fehlgeschlagen.";
+          btn.disabled = false;
+          btn.textContent = "Wiederaufnehmen";
+          return;
+        }
+      }
+      jobId = jid;
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(refreshJob, 2200);
+      refreshJob();
+      loadRunList();
+    });
+
+    // Load the recovered-runs list once on page load
+    loadRunList();
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      filename.value = file.name;
+      posting.value = await file.text();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      posting.value = "";
+      filename.value = "stellenanzeige.md";
+      formMessage.textContent = "";
+    });
+
+    startBtn.addEventListener("click", async () => {
+      const content = posting.value.trim();
+      if (!content) {
+        formMessage.textContent = "Bitte zuerst eine Stellenanzeige einfügen.";
+        return;
+      }
+      startBtn.disabled = true;
+      formMessage.textContent = "Run wird gestartet.";
+      const response = await fetch("/api/runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: filename.value, content })
+      });
+      const data = await response.json();
+      startBtn.disabled = false;
+      if (!response.ok) {
+        formMessage.textContent = data.error || "Run konnte nicht gestartet werden.";
+        return;
+      }
+      jobId = data.job_id;
+      output.textContent = "Pipeline läuft. Die Seite aktualisiert den Status automatisch.";
+      renderJob(data);
+      startPolling();
+    });
+
+    answerBtn.addEventListener("click", async () => {
+      if (!jobId) return;
+      const text = answers.value.trim();
+      if (!text) return;
+      answerBtn.disabled = true;
+      const response = await fetch(`/api/runs/${jobId}/answers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: text })
+      });
+      const data = await response.json();
+      answerBtn.disabled = false;
+      if (!response.ok) {
+        errorBox.textContent = data.error || "Antworten konnten nicht gesendet werden.";
+        return;
+      }
+      renderJob(data);
+      startPolling();
+    });
+
+    fitContinueBtn.addEventListener("click", async () => {
+      if (!jobId) return;
+      fitContinueBtn.disabled = true;
+      fitCancelBtn.disabled = true;
+      const response = await fetch(`/api/runs/${jobId}/fit-continue`, { method: "POST" });
+      const data = await response.json();
+      fitContinueBtn.disabled = false;
+      fitCancelBtn.disabled = false;
+      if (!response.ok) {
+        errorBox.textContent = data.error || "Fit-Entscheidung konnte nicht gesendet werden.";
+        return;
+      }
+      renderJob(data);
+      startPolling();
+    });
+
+    fitCancelBtn.addEventListener("click", async () => {
+      if (!jobId) return;
+      if (!confirm("Run wirklich abbrechen? Keine weiteren Token werden verbraucht.")) return;
+      fitContinueBtn.disabled = true;
+      fitCancelBtn.disabled = true;
+      const response = await fetch(`/api/runs/${jobId}/fit-cancel`, { method: "POST" });
+      const data = await response.json();
+      fitContinueBtn.disabled = false;
+      fitCancelBtn.disabled = false;
+      if (response.ok) renderJob(data);
+    });
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(refreshJob, 2200);
+      refreshJob();
+    }
+
+    async function refreshJob() {
+      if (!jobId) return;
+      const response = await fetch(`/api/runs/${jobId}`);
+      const data = await response.json();
+      if (!response.ok) {
+        errorBox.textContent = data.error || "Status konnte nicht geladen werden.";
+        return;
+      }
+      renderJob(data);
+      // Auto-refresh the active tab while the job is still running
+      if (activeTab && ["running", "continuing"].includes(data.status)) {
+        loadFile(activeTab);
+      }
+      if (["paused", "fit_warning", "completed", "error", "cancelled"].includes(data.status) && pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    function renderJob(data) {
+      statusEl.textContent = data.status;
+      stageEl.textContent = data.stage || "-";
+      runIdEl.textContent = data.run_id || "-";
+      updatedAtEl.textContent = data.updated_at ? new Date(data.updated_at).toLocaleTimeString() : "-";
+      renderCost(data.cost_summary);
+      renderQualityRegressions(data.quality_regressions || []);
+      errorBox.textContent = data.error || "";
+      questionsBox.style.display = data.status === "paused" ? "block" : "none";
+
+      // Profile-Fit warning panel
+      if (data.status === "fit_warning") {
+        fitWarningBox.style.display = "block";
+        // Fetch the gap file content
+        fetch(`/api/runs/${data.job_id}/files/_profile_fit.md`)
+          .then(r => r.ok ? r.text() : "Hinweise konnten nicht geladen werden.")
+          .then(t => { fitWarningText.textContent = t; });
+      } else {
+        fitWarningBox.style.display = "none";
+      }
+      questionsText.textContent = data.questions || "";
+      renderPipeline(data.phases || [], data.status);
+      renderTabs(data.available_files || []);
+      renderDownloadBtn(data.available_files || [], data.job_id);
+      renderWorkflowBtns(data.available_files || [], data.job_id, data.status);
+      if (data.run_log && output.textContent.startsWith("Pipeline läuft")) {
+        output.textContent = data.run_log;
+      }
+    }
+
+    function renderCost(cost) {
+      if (!cost || !cost.calls) {
+        costEl.textContent = "—";
+        costEl.parentElement.title = "Noch keine LLM-Calls verbucht.";
+        return;
+      }
+      costEl.textContent = cost.compact || ("$" + (cost.total_cost_usd || 0).toFixed(2));
+      // Detailed per-agent breakdown in the tile's tooltip
+      const lines = ["LLM-Kostenaufschlüsselung (USD):"];
+      (cost.by_agent || []).forEach(a => {
+        lines.push(`  ${a.agent}: $${(a.cost_usd || 0).toFixed(4)} · ${a.calls} call(s)`);
+      });
+      lines.push("");
+      lines.push(`Input-Token gesamt: ${(cost.total_input_tokens || 0).toLocaleString()}`);
+      lines.push(`Output-Token gesamt: ${(cost.total_output_tokens || 0).toLocaleString()}`);
+      if (cost.total_cache_read_input_tokens) {
+        lines.push(`Cache-Read: ${(cost.total_cache_read_input_tokens || 0).toLocaleString()}`);
+      }
+      if (cost.rate_limit_retries) {
+        lines.push(`Rate-Limit-Retries: ${cost.rate_limit_retries}`);
+      }
+      if (cost.errors) {
+        lines.push(`Fehler: ${cost.errors}`);
+      }
+      costEl.parentElement.title = lines.join("\n");
+    }
+
+    function renderQualityRegressions(findings) {
+      if (!findings || findings.length === 0) {
+        qualityWarningBox.style.display = "none";
+        return;
+      }
+      const lines = findings.map(f => {
+        const median = (typeof f.median === "number") ? f.median.toFixed(2) : f.median;
+        const latest = (typeof f.latest === "number") ? f.latest.toFixed(2) : f.latest;
+        const delta = (f.delta_pct !== null && f.delta_pct !== undefined) ? ` (${f.delta_pct >= 0 ? "+" : ""}${f.delta_pct}%)` : "";
+        return `• ${f.metric}: ${latest} vs. Median ${median}${delta}`;
+      });
+      qualityWarningText.textContent = lines.join("\n");
+      qualityWarningBox.style.display = "block";
+    }
+
+    function renderPipeline(phases, jobStatus) {
+      const visible = phases.some(p => p.status !== "pending" && p.status !== "skipped");
+      if (!visible) { pipelineEl.classList.remove("visible"); return; }
+      pipelineEl.classList.add("visible");
+      pipelineEl.innerHTML = phases.map(p => {
+        if (p.status === "skipped") return "";
+        const isRunning = p.status === "running";
+        const icon = isRunning
+          ? '<span class="spin-ring"></span>'
+          : '<span class="step-icon"></span>';
+        const detail = p.detail ? `<span class="step-detail">(${p.detail})</span>` : "";
+        return `<div class="pipeline-step ${p.status}">
+          ${icon}
+          <span class="step-label">${p.label}</span>${detail}
+        </div>`;
+      }).join("");
+    }
+
+    function renderDownloadBtn(files, jid) {
+      // Prefer the PDF if it exists, otherwise the markdown.
+      // EN takes precedence over DE when both PDFs are present.
+      const pdf = files.find(f => f === "04_final_en.pdf" || f === "04_final_de.pdf");
+      const md = files.find(f => f === "04_final_en.md" || f === "04_final_de.md");
+      const cv = pdf || md;
+      if (!cv || !jid) { downloadBtn.style.display = "none"; return; }
+      const lang = cv.includes("_en") ? "EN" : "DE";
+      const isPdf = cv.endsWith(".pdf");
+      downloadBtn.textContent = isPdf ? `PDF herunterladen (${lang})` : `CV herunterladen (${lang})`;
+      downloadBtn.href = `/api/runs/${jid}/files/${encodeURIComponent(cv)}?download=1`;
+      downloadBtn.style.display = "";
+    }
+
+    function renderWorkflowBtns(files, jid, status) {
+      const hasMd = files.includes("04_final_de.md") || files.includes("04_final_en.md");
+      const hasPdf = files.includes("04_final_de.pdf") || files.includes("04_final_en.pdf");
+      if (!hasMd || !jid) {
+        openMdBtn.style.display = "none";
+        renderPdfBtn.style.display = "none";
+        naturaliseBtn.style.display = "none";
+        return;
+      }
+      openMdBtn.style.display = "";
+      renderPdfBtn.style.display = "";
+      naturaliseBtn.style.display = "";
+      renderPdfBtn.textContent = hasPdf ? "↻ PDF neu erstellen" : "⬇ PDF erstellen";
+      const busy = status === "running" || status === "continuing" || status === "rendering";
+      renderPdfBtn.disabled = busy;
+      naturaliseBtn.disabled = busy;
+    }
+
+    openMdBtn.addEventListener("click", async () => {
+      if (!jobId) return;
+      openMdBtn.disabled = true;
+      const r = await fetch(`/api/runs/${jobId}/open-md`, { method: "POST" });
+      openMdBtn.disabled = false;
+      if (!r.ok) {
+        errorBox.textContent = "MD konnte nicht geöffnet werden.";
+      }
+    });
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+    }
+
+    function renderNaturalisationList(suggestions) {
+      if (!suggestions.length) {
+        naturalisationList.innerHTML = "<p class='muted'>Keine Vorschläge — der CV liest sich bereits sauber.</p>";
+        natApplyBtn.disabled = true;
+        return;
+      }
+      natApplyBtn.disabled = false;
+      const categoryLabels = {
+        reflexive_opener: "Reflexiver Opener",
+        double_negation: "Doppel-Negation",
+        wordiness: "Wortig",
+        ai_phrase: "AI-Wendung",
+      };
+      naturalisationList.innerHTML = suggestions.map((s, idx) => `
+        <label style="display:block; border:1px solid var(--line); border-radius:6px; padding:10px; margin-bottom:8px; background:var(--paper); cursor:pointer">
+          <div style="display:flex; align-items:flex-start; gap:10px">
+            <input type="checkbox" class="nat-check" data-sid="${escapeHtml(s.id)}" checked style="margin-top:3px">
+            <div style="flex:1; min-width:0">
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px">
+                <span style="font-size:11px; font-weight:650; text-transform:uppercase; color:var(--muted); letter-spacing:0.05em">${escapeHtml(categoryLabels[s.kategorie] || s.kategorie)}</span>
+                <span style="font-size:11px; color:var(--muted)">${escapeHtml(s.location || "")}</span>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:13px; line-height:1.5">
+                <div>
+                  <div style="font-size:10px; font-weight:650; color:var(--muted); text-transform:uppercase; margin-bottom:3px">Original</div>
+                  <div style="background:#fdf4f3; padding:6px 8px; border-radius:4px; border-left:3px solid #b85c54">${escapeHtml(s.original)}</div>
+                </div>
+                <div>
+                  <div style="font-size:10px; font-weight:650; color:var(--muted); text-transform:uppercase; margin-bottom:3px">Vorschlag</div>
+                  <div style="background:#f0f5ef; padding:6px 8px; border-radius:4px; border-left:3px solid #6ba264">${escapeHtml(s.vorschlag)}</div>
+                </div>
+              </div>
+              ${s.begründung ? `<div style="font-size:11px; color:var(--muted); margin-top:6px; font-style:italic">${escapeHtml(s.begründung)}</div>` : ""}
+            </div>
+          </div>
+        </label>
+      `).join("");
+    }
+
+    naturaliseBtn.addEventListener("click", async () => {
+      if (!jobId) return;
+      naturaliseBtn.disabled = true;
+      naturaliseBtn.textContent = "🪶 Analyse läuft …";
+      naturalisationPanel.style.display = "";
+      naturalisationStatus.textContent = "wird analysiert …";
+      naturalisationList.innerHTML = "";
+      try {
+        const r = await fetch(`/api/runs/${jobId}/naturalise`, { method: "POST" });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          naturalisationStatus.textContent = "Fehler: " + (err.error || r.statusText);
+          return;
+        }
+        const data = await r.json();
+        naturalisationSource = data.source;
+        naturalisationSuggestions = data.suggestions || [];
+        const dropped = (data.dropped || []).length;
+        // Parser-Fehler (z.B. abgeschnittene JSON-Antwort wegen Token-Limit)
+        // sichtbar machen, statt fälschlich "keine Vorschläge" zu zeigen.
+        if (data.error) {
+          naturalisationStatus.textContent = `⚠️ Antwort konnte nicht geparst werden — ${data.error}. Bitte nochmal versuchen.`;
+        } else if (naturalisationSuggestions.length) {
+          const droppedNote = dropped ? ` · ${dropped} verworfen (nicht wortgetreu im CV)` : "";
+          naturalisationStatus.textContent = `${naturalisationSuggestions.length} Vorschläge · Quelle: ${data.source}${droppedNote}`;
+        } else if (dropped) {
+          naturalisationStatus.textContent = `⚠️ ${dropped} Vorschläge verworfen (Original-Text nicht wortgetreu im CV gefunden). Eventuell wurde das CV nach der Naturalisations-Analyse geändert.`;
+        } else {
+          naturalisationStatus.textContent = `Keine Vorschläge · Quelle: ${data.source}`;
+        }
+        renderNaturalisationList(naturalisationSuggestions);
+      } catch (e) {
+        naturalisationStatus.textContent = "Netzwerkfehler: " + e.message;
+      } finally {
+        naturaliseBtn.disabled = false;
+        naturaliseBtn.textContent = "🪶 Naturalisation prüfen";
+      }
+    });
+
+    natSelectAll.addEventListener("click", () => {
+      naturalisationList.querySelectorAll(".nat-check").forEach(cb => { cb.checked = true; });
+    });
+    natSelectNone.addEventListener("click", () => {
+      naturalisationList.querySelectorAll(".nat-check").forEach(cb => { cb.checked = false; });
+    });
+    natCloseBtn.addEventListener("click", () => {
+      naturalisationPanel.style.display = "none";
+    });
+
+    natApplyBtn.addEventListener("click", async () => {
+      if (!jobId || !naturalisationSource) return;
+      const checked = Array.from(naturalisationList.querySelectorAll(".nat-check:checked")).map(cb => cb.dataset.sid);
+      if (!checked.length) {
+        naturalisationStatus.textContent = "Keine Auswahl — nichts zu tun.";
+        return;
+      }
+      const accepted = naturalisationSuggestions.filter(s => checked.includes(s.id));
+      natApplyBtn.disabled = true;
+      const old = natApplyBtn.textContent;
+      natApplyBtn.textContent = "wird angewendet …";
+      try {
+        const r = await fetch(`/api/runs/${jobId}/naturalise/apply`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accepted, source: naturalisationSource })
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          naturalisationStatus.textContent = "Fehler: " + (data.error || r.statusText);
+          return;
+        }
+        const appliedCount = (data.applied || []).length;
+        const skippedCount = (data.skipped || []).length;
+        naturalisationStatus.textContent = `${appliedCount} angewendet, ${skippedCount} verworfen · Backup: ${data.backup}`;
+        // After apply, drop the suggestion list (file changed, suggestions may be stale)
+        naturalisationSuggestions = [];
+        naturalisationList.innerHTML = "<p class='muted'>Auswahl angewendet. Du kannst die Datei jetzt erneut öffnen oder das PDF neu erstellen.</p>";
+        // Refresh job to pick up any new files
+        refreshJob();
+      } catch (e) {
+        naturalisationStatus.textContent = "Netzwerkfehler: " + e.message;
+      } finally {
+        natApplyBtn.disabled = false;
+        natApplyBtn.textContent = old;
+      }
+    });
+
+    renderPdfBtn.addEventListener("click", async () => {
+      if (!jobId) return;
+      renderPdfBtn.disabled = true;
+      const original = renderPdfBtn.textContent;
+      renderPdfBtn.textContent = "PDF wird erstellt …";
+      const r = await fetch(`/api/runs/${jobId}/pdf`, { method: "POST" });
+      if (!r.ok) {
+        errorBox.textContent = "PDF-Render fehlgeschlagen.";
+        renderPdfBtn.disabled = false;
+        renderPdfBtn.textContent = original;
+        return;
+      }
+      // Poll for completion (the render runs in a background thread server-side)
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(refreshJob, 1500);
+      refreshJob();
+    });
+
+    function renderTabs(files) {
+      tabs.innerHTML = "";
+      const ordered = ["04_final_de.pdf", "04_final_en.pdf", "04_final_de.md", "04_final_en.md", "05_diff.md", "_coach_questions.md", "_factcheck_open_questions.md", "_redundancy.md", "01_analyse.md", "_experience_activation.md", "02_klaerungsfragen.md", "02_antworten.md", "_run.log", "00_stellenanzeige.md"];
+      ordered.filter((name) => files.includes(name)).forEach((name) => {
+        const button = document.createElement("button");
+        button.className = name.startsWith("04_") ? "" : "secondary";
+        button.textContent = fileLabels[name] || name;
+        button.addEventListener("click", () => { activeTab = name; loadFile(name); });
+        tabs.appendChild(button);
+      });
+    }
+
+    async function loadFile(name) {
+      if (!jobId) return;
+      if (name.endsWith(".pdf") || name.endsWith(".html")) {
+        window.open(`/api/runs/${jobId}/files/${encodeURIComponent(name)}`, "_blank");
+        return;
+      }
+      const response = await fetch(`/api/runs/${jobId}/files/${encodeURIComponent(name)}`);
+      const text = await response.text();
+      output.textContent = response.ok ? text : "Datei konnte nicht geladen werden.";
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+id: demo_pm_de
+description: >
+  Demo eval case for the bundled German PM posting (DemoSaaS AG).
+  Verifies the pipeline preserves the Alex Müller persona's seniority,
+  surfaces bridge-function language for regulated B2B-SaaS contexts,
+  and stays factual against the four fictional employer entries
+  (MediaCorp, HealthApp, GastroSaaS, DirectorySaaS). Targets a run
+  produced by:
+
+    uv run cv-tailor run stellenanzeigen/demo/posting_de.md
+
+  after init_persona.py has rendered the demo persona into data/.
+run_glob: "*_demosaas_*"
+artifacts:
+  final_cv: "04_final_de.md"
+  diff: "05_diff.md"
+checks:
+  required_final_contains:
+    - "Alex Müller"
+    - "MediaCorp"
+    - "HealthApp"
+    - "GastroSaaS"
+    - "DirectorySaaS"
+    - "Product Owner"
+  forbidden_final_contains:
+    - "Alex"
+    - "Müller"
+    - "MediaCorp"
+    - "HealthApp"
+    - "GastroSaaS"
+    - "FinTechCo"
+    - "DesignPlatformCo"
+    - "Cross-funktionale Teams führe"
+    - "Senior Product Owner in cloudbasierten B2B-Plattformen"
+  required_diff_contains:
+    - "Brückenfunktion"
+  max_summary_words: 170
+  max_diff_rows: 30
+judge:
+  min_score: 4
+  min_factfulness: 4
+  max_critical_issues: 0
+  rubric: >
+    Demo case for a Senior PM B2B-SaaS role at DemoSaaS AG (regulated
+    environment, insurance/finance domain). The tailored CV must
+    preserve the persona's 14-year seniority anchor and concrete
+    employer references (MediaCorp, HealthApp, GastroSaaS,
+    DirectorySaaS). Reject generic PM language ("führe
+    cross-funktionale Teams"), invented metrics, and any reference
+    to non-persona employers. The bridge-function framing should be
+    present in the management summary (practice assistants /
+    editorial teams / restaurant operators). Missing nice-to-have
+    criteria (specific Swiss certifications, vertical-specific
+    domain knowledge) are improvement notes, not blockers.
