@@ -1,0 +1,35 @@
+writer_section_concurrency: 1
+output:
+  author_name: Alex Müller
+  cv_version_anchor: '000000'
+agents:
+  analyst:
+    provider: anthropic
+    model: claude-sonnet-4-6
+  writer:
+    provider: anthropic
+    model: claude-sonnet-4-6
+  hiring_reviewer:
+    provider: openai
+    model: gpt-4.1
+  coach_reviewer:
+    provider: anthropic
+    model: claude-sonnet-4-6
+  factcheck:
+    provider: anthropic
+    model: claude-haiku-4-5
+  translator:
+    provider: openai
+    model: gpt-4.1-mini
+  diff:
+    provider: anthropic
+    model: claude-haiku-4-5
+  keyword_marker:
+    provider: anthropic
+    model: claude-haiku-4-5
+  naturalisation:
+    provider: anthropic
+    model: claude-haiku-4-5
+  eval_judge:
+    provider: openai
+    model: gpt-4.1
