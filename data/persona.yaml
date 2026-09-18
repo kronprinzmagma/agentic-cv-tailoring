@@ -1,0 +1,266 @@
+# Demo persona for the public showcase repository.
+#
+# Used by scripts/init_persona.py to render data/standard_cv.md,
+# data/standard_cv_en.md, and data/zeugnisse/*.md as runnable demo inputs.
+#
+# All names, employers, achievements, and contact details are fictional.
+# The persona profile is a Senior Product Manager in B2B-SaaS — chosen
+# because it exercises every agent (bridging language, AI-related claims,
+# multi-domain experience, regulated-environment work).
+
+persona:
+  name: "Alex Müller"
+  role: "Senior Product Manager, B2B-SaaS"
+  address: "Musterstrasse 1, 8000 Zürich"
+  mobile: "+41 79 000 00 00"
+  email: "alex.mueller@example.com"
+  nationality: "Switzerland & Germany"
+  date_of_birth: "01. January 1985"
+
+  summary_de: |
+    Digital Product Professional mit 14 Jahren Erfahrung in der Entwicklung und Skalierung digitaler B2B-SaaS-Produkte – von der Gründung und dem erfolgreichen Exit eines eigenen Startups bis zur strategischen Plattformverantwortung in regulierten Sektoren wie Gesundheit und Medien.
+
+    Meine Stärke liegt in der Brückenfunktion: Ich übersetze zwischen Domänenexpert:innen – Restaurantbetreiber:innen, Praxisassistent:innen im Gesundheitssektor, Redaktionsteams in Medienorganisationen – und Engineering. Ich schaffe Klarheit wo andere Komplexität sehen, setze klare Prioritäten, führe interdisziplinäre Teams und halte konsequent auf Nutzerbedürfnisse und Geschäftsziele aus. Produktentscheidungen verankere ich in strukturierter Nutzerforschung und messbaren Ergebnissen.
+
+    KI ist für mich gelebte Praxis: Ich habe KI-Arbeitsgruppen aufgebaut, externe Anbieter systematisch evaluiert, konkrete Anwendungsfälle pilotiert und KI-gestützte Workflows in den Produktalltag integriert. Datenbasierte Entscheidungen, klare OKR-Strukturen und ein enger Draht zum Engineering sind mein Arbeitsmodus – ob in einem regulierten Umfeld, in einem wachsenden Startup oder bei der Skalierung einer etablierten Plattform.
+
+  summary_en: |
+    Digital Product Professional with 14 years of experience developing and scaling B2B-SaaS products – from founding and successfully exiting my own start-up to strategic platform ownership in regulated sectors including healthcare and media.
+
+    My strength is the bridging function: I translate between domain experts – restaurant operators, healthcare practice assistants, editorial teams in media organisations – and engineering. I create clarity where others see complexity, set clear priorities, lead cross-functional teams and consistently align on user needs and business outcomes. I anchor product decisions in structured user research and measurable results.
+
+    AI is my lived practice: I have built AI working groups, systematically evaluated external providers, piloted concrete use cases and integrated AI-driven workflows into everyday product work. Data-driven decisions, clear OKR structures and close collaboration with engineering are my working mode – whether in a regulated environment, a growing start-up or a scaling established platform.
+
+  key_competencies:
+    - title_de: "Strategische Produktführung"
+      title_en: "Strategic Product Leadership"
+      body_de: "Entwicklung klarer Produktvisionen, Roadmap-Hoheit und wirkungsvolle Priorisierung von der Konzeptphase bis zur Skalierung."
+      body_en: "Developing clear product visions, roadmap ownership and effective prioritisation from concept through to scale."
+
+    - title_de: "Aufbau und Führung von Produktteams"
+      title_en: "Building & Leading Product Teams"
+      body_de: "Entwicklung interdisziplinärer Teams im agilen Umfeld (Scrum, SAFe) mit Fokus auf Teamstruktur, fachliche Weiterentwicklung und Stakeholder-Management."
+      body_en: "Building cross-functional teams in agile environments (Scrum, SAFe) with a focus on team structure, professional development and stakeholder management."
+
+    - title_de: "KI in der Produktpraxis"
+      title_en: "AI in Product Practice"
+      body_de: "Aufbau von KI-Arbeitsgruppen, Evaluierung externer KI-Anbieter, Pilotierung konkreter Anwendungsfälle und Einführung KI-gestützter Workflows zur Produktivitätssteigerung."
+      body_en: "Building AI working groups, evaluating external AI providers, piloting concrete use cases and introducing AI-driven workflows for productivity gains."
+
+    - title_de: "Steuerung an der Schnittstelle von Tech, Design und Business"
+      title_en: "Cross-Functional Steering"
+      body_de: "Strategische Anforderungen klar formulieren, technisch realisierbar denken und konsequent auf Geschäftserfolg ausrichten – in direktem Dialog mit Engineering, Design und Stakeholdern."
+      body_en: "Translating strategic requirements into actionable product decisions, thinking in technical feasibility and driving consistent alignment with engineering, design and business stakeholders."
+
+    - title_de: "Datenbasierte Produktsteuerung"
+      title_en: "Data-Driven Product Steering"
+      body_de: "KPI-Frameworks entwickeln, Marktpotenziale erkennen und Entscheidungen auf Basis strukturierter Datenanalyse ableiten."
+      body_en: "Developing KPI frameworks, identifying market potential and deriving decisions from structured data analysis."
+
+    - title_de: "Kommunikation auf allen Ebenen"
+      title_en: "Multi-Level Communication"
+      body_de: "Komplexe Sachverhalte verständlich aufbereiten und auf allen Hierarchiestufen – von operativen Teams bis zu Geschäftsleitung und Board – wirkungsvoll vertreten."
+      body_en: "Communicating complex topics clearly and persuasively at all levels – from operational teams through to executive and board audiences."
+
+    - title_de: "Technologische Tiefe"
+      title_en: "Technical Depth"
+      body_de: "Fundierte Erfahrung in Cloud-Architekturen, API-first Design, modernen Daten-Stacks und digitalen Plattform-Ökosystemen."
+      body_en: "Solid experience in cloud architectures, API-first design, modern data stacks and digital platform ecosystems."
+
+  experience:
+    - period: "2023–2025"
+      company: "MediaCorp"
+      title_de: "Senior Product Owner"
+      title_en: "Senior Product Owner"
+      bullets_de:
+        - "Strategische Weiterentwicklung der cloudbasierten redaktionellen Workflow-Plattform – Backlog-Neustrukturierung und Priorisierung mit internen Stakeholdern."
+        - "Aufbau und Leitung der internen KI-Arbeitsgruppe: Evaluierung von KI-Anbietern, Pilotierung von Content-Empfehlungs-Anwendungsfällen für Redaktionsteams."
+        - "Führung eines interdisziplinären Teams aus Entwicklung, Design und Data Engineering im agilen Umfeld (Scrum)."
+        - "Einführung datenbasierter Priorisierungsprozesse – OKR-Strukturen verankert, Entscheidungsqualität messbar verbessert."
+      bullets_en:
+        - "Strategic development of the cloud-based editorial workflow platform – backlog restructuring and prioritisation with internal stakeholders."
+        - "Built and led the internal AI working group: evaluated AI providers, piloted content recommendation use cases for editorial teams."
+        - "Led a cross-functional team of engineering, design and data engineering in an agile environment (Scrum)."
+        - "Introduced data-driven prioritisation processes – OKR structures established, decision quality measurably improved."
+
+    - period: "2019–2023"
+      company: "HealthApp"
+      title_de: "Product Owner"
+      title_en: "Product Owner"
+      bullets_de:
+        - "Produktverantwortung für eine SaaS-Plattform für Praxisassistent:innen im Gesundheitssektor – reguliertes Umfeld, hohe Anforderungen an Release-Stabilität."
+        - "Nutzerforschung und kontinuierliches Discovery mit Praxisteams – strukturierte Anforderungsaufnahme in einem sicherheitskritischen Bereich."
+        - "Strategische Mitgestaltung der Plattformarchitektur für Skalierbarkeit und regulatorische Konformität."
+        - "Reduzierung kritischer Produktionsfehler durch konsequenten Fokus auf technische Qualität und systematisches Risikomanagement."
+      bullets_en:
+        - "Product ownership for a SaaS platform serving healthcare practice assistants – regulated environment with high release stability requirements."
+        - "User research and continuous discovery with practice teams – structured requirements in a safety-critical domain."
+        - "Strategic input on platform architecture for scalability and regulatory compliance."
+        - "Reduced critical production defects through consistent focus on technical quality and systematic risk management."
+
+    - period: "2015–2019"
+      company: "GastroSaaS"
+      title_de: "Gründer & Managing Director"
+      title_en: "Founder & Managing Director"
+      bullets_de:
+        - "Gründung und Aufbau von GastroSaaS, einer B2B-SaaS-Plattform für Restaurantbetreiber – von der Produktidee bis zum erfolgreichen Exit."
+        - "Operative und strategische Gesamtverantwortung: Führung eines 6-köpfigen Teams, Aufbau des Vertriebs und Entwicklung strategischer Partnerschaften."
+        - "Produktorientiertes Wachstumsmodell: direkte Nutzerforschung mit Gastronomiebetreibern als Grundlage für produktgetriebene Expansion."
+        - "Erfolgreicher strategischer Exit nach 4 Jahren – Übernahme durch etablierten Plattformanbieter im DACH-Raum."
+      bullets_en:
+        - "Founded and built GastroSaaS, a B2B-SaaS platform for restaurant operators – from product idea through to successful exit."
+        - "Full operational and strategic ownership: led a team of 6, built sales function and developed strategic partnerships."
+        - "Product-led growth model: direct user research with restaurant operators as the foundation for expansion."
+        - "Successful strategic exit after 4 years – acquisition by an established DACH-region platform provider."
+
+    - period: "2011–2015"
+      company: "DirectorySaaS"
+      title_de: "Product Manager"
+      title_en: "Product Manager"
+      bullets_de:
+        - "Produktverantwortung für eine lokale Verzeichnisplattform – Mobile-App-Lancierung als strategischer Wachstumstreiber."
+        - "Führung interdisziplinärer Teams aus Entwicklung, Design und Marketing mit klarer Zielverantwortung."
+        - "Datenbasierte Priorisierung: Aufbau von Analytics-Frameworks zur evidenzgestützten Roadmap-Steuerung."
+        - "Stakeholder-Management auf allen Ebenen – von operativen Entwicklungsteams bis zur Geschäftsleitung."
+      bullets_en:
+        - "Product ownership for a local directory platform – mobile app launch as a strategic growth driver."
+        - "Led cross-functional teams of engineering, design and marketing with clear goal accountability."
+        - "Data-driven prioritisation: built analytics frameworks for evidence-based roadmap steering."
+        - "Stakeholder management at all levels – from operational development teams through to executive leadership."
+
+  education:
+    - period: "2008–2010"
+      institution: "ZHAW"
+      degree_de: "Master of Business Administration"
+      degree_en: "Master of Business Administration"
+    - period: "2003–2007"
+      institution: "Universität Zürich"
+      degree_de: "Bachelor of Arts in Wirtschaftsinformatik"
+      degree_en: "Bachelor of Arts in Business Informatics"
+
+  certificates:
+    - name: "Certified Scrum Product Owner (CSPO)"
+      year: "2018"
+    - name: "Pragmatic Marketing — Pragmatic Product Manager"
+      year: "2020"
+    - name: "SAFe 5 Product Owner / Product Manager"
+      year: "2022"
+    - name: "AWS Certified Cloud Practitioner"
+      year: "2024"
+
+  languages:
+    - { name_de: "Deutsch", name_en: "German", level: "C2 (native)" }
+    - { name_de: "Englisch", name_en: "English", level: "C1 (full professional)" }
+    - { name_de: "Französisch", name_en: "French", level: "B1 (working)" }
+
+  skills:
+    - { category_de: "Product Tools", category_en: "Product Tools", items: ["Jira", "Confluence", "Linear", "Figma", "Miro"] }
+    - { category_de: "Analytics", category_en: "Analytics", items: ["Mixpanel", "Amplitude", "SQL", "Looker", "GA4"] }
+    - { category_de: "KI / AI", category_en: "AI", items: ["Claude", "GPT-4", "LangChain", "RAG patterns", "vector databases"] }
+    - { category_de: "Methoden", category_en: "Methods", items: ["Scrum", "SAFe", "Continuous Discovery", "Jobs-to-be-Done", "OKRs"] }
+    - { category_de: "Cloud", category_en: "Cloud", items: ["AWS basics", "GCP basics", "Docker", "CI/CD pipelines"] }
+
+testimonials:
+  - filename: "01_mediacorp_testimonial.md"
+    employer: "MediaCorp"
+    period: "2023–2025"
+    issuer_de: "Dr. Maria Beispiel, CTO MediaCorp"
+    issuer_en: "Dr. Maria Beispiel, CTO MediaCorp"
+    body_de: |
+      Herr Müller war bei uns als Senior Product Owner für unsere redaktionelle Workflow-Plattform tätig und hat in dieser Zeit massgebliche Beiträge zur strategischen Weiterentwicklung des Produkts geleistet.
+
+      Besonders beeindruckt hat uns Herr Müllers Fähigkeit, zwischen technischen Teams und redaktionellen Fachteams zu vermitteln. Er hat unsere Journalistinnen und Redakteure nicht als abstrakte Nutzer betrachtet, sondern ihre konkreten Arbeitsabläufe und Bedürfnisse durch strukturierte Discovery-Prozesse tiefgehend verstanden. Diese Brückenkompetenz hat dazu beigetragen, dass Produktentscheidungen breite interne Akzeptanz fanden.
+
+      Herr Müller hat ausserdem die Initiative ergriffen, eine interne KI-Arbeitsgruppe aufzubauen und zu leiten. Er hat externe Anbieter systematisch evaluiert, mehrere Pilotprojekte für KI-gestützte Content-Empfehlungen konzipiert und koordiniert sowie erste Erkenntnisse direkt in den Produktentwicklungsprozess eingespeist. Sein pragmatischer Ansatz – Mehrwert demonstrieren, bevor breit ausgerollt wird – hat intern Vertrauen geschaffen.
+
+      Als Führungspersönlichkeit hat Herr Müller unser interdisziplinäres Team aus Entwicklung, Design und Data Engineering mit Klarheit, Respekt und konsequenter Zielorientierung geführt. Er kommuniziert auf allen Ebenen des Unternehmens wirkungsvoll und verliert dabei nie den Fokus auf das Wesentliche.
+
+      Wir empfehlen Herrn Müller ohne Einschränkung und wünschen ihm für seinen weiteren beruflichen Weg alles Gute.
+    body_en: |
+      Alex Müller worked with us as Senior Product Owner for our editorial workflow platform, and during this period made decisive contributions to the strategic development of the product.
+
+      We were particularly impressed by Alex's ability to bridge between technical teams and editorial specialist teams. Rather than treating our journalists and editors as abstract users, he developed a deep understanding of their concrete workflows and needs through structured discovery processes. This bridging capability meant that product decisions consistently gained broad internal acceptance.
+
+      Alex also took the initiative to build and lead an internal AI working group. He systematically evaluated external providers, designed and coordinated several pilot projects for AI-assisted content recommendations, and fed early findings directly into the product development process. His pragmatic approach – demonstrating value before broad rollout – built trust across the organisation.
+
+      As a leader, Alex guided our cross-functional team of engineering, design and data engineering with clarity, respect and consistent goal-orientation. He communicates effectively at all levels of the company without losing focus on what matters most.
+
+      We recommend Alex without reservation and wish him all the best for the next chapter of his career.
+
+  - filename: "02_healthapp_testimonial.md"
+    employer: "HealthApp"
+    period: "2019–2023"
+    issuer_de: "Thomas Musterling, VP Product HealthApp"
+    issuer_en: "Thomas Musterling, VP Product HealthApp"
+    body_de: |
+      Herr Müller hat bei HealthApp über vier Jahre lang als Product Owner für unsere Kernplattform gewirkt, die täglich von mehreren tausend Praxisassistent:innen in ambulanten Gesundheitseinrichtungen genutzt wird. In diesem regulierten und sicherheitskritischen Umfeld hat er aussergewöhnliche Qualitäten bewiesen.
+
+      Was Herrn Müller auszeichnet, ist sein tiefes Verständnis für die tatsächlichen Arbeitsrealitäten unserer Nutzerinnen und Nutzer. Er hat regelmässig Praxisbesuche durchgeführt, strukturierte Interviews geführt und dieses Wissen konsequent in präzise Anforderungen übersetzt. Gerade im Gesundheitssektor, wo Fehler direkte Auswirkungen auf die Patientenversorgung haben können, war diese Qualität von zentraler Bedeutung.
+
+      Herr Müller hat massgeblich zur Verbesserung unserer Release-Stabilität beigetragen. Er hat technische Risiken frühzeitig identifiziert, in Zusammenarbeit mit dem Engineering-Team priorisiert und dafür gesorgt, dass regulatorische Anforderungen stets eingehalten wurden. Die Anzahl kritischer Produktionsfehler ist während seiner Amtszeit kontinuierlich gesunken.
+
+      Darüber hinaus hat Herr Müller wichtige Impulse für die strategische Weiterentwicklung unserer Plattformarchitektur gegeben. Seine Fähigkeit, technische Abwägungen zu verstehen und in strategische Produktentscheidungen zu übersetzen, hat unserem Engineering-Team wertvolle Orientierung gegeben.
+
+      Wir haben Herrn Müller als verlässlichen, kompetenten und menschlich integren Partner geschätzt. Wir empfehlen ihn wärmstens.
+    body_en: |
+      Alex Müller worked at HealthApp for over four years as Product Owner for our core platform, which is used daily by several thousand practice assistants in outpatient healthcare settings. In this regulated, safety-critical environment, he demonstrated exceptional qualities.
+
+      What distinguishes Alex is his deep understanding of the actual working realities of our users. He regularly conducted practice visits, led structured interviews and consistently translated this knowledge into precise requirements. In the healthcare sector, where errors can have direct consequences for patient care, this quality was of central importance.
+
+      Alex contributed decisively to improving our release stability. He identified technical risks early, prioritised them in collaboration with the engineering team and ensured that regulatory requirements were consistently met. The number of critical production defects decreased continuously during his tenure.
+
+      Alex also provided important input for the strategic development of our platform architecture. His ability to understand technical trade-offs and translate them into strategic product decisions gave our engineering team valuable orientation.
+
+      We valued Alex as a reliable, competent and personally principled partner. We recommend him warmly.
+
+  - filename: "03_gastrosaas_testimonial.md"
+    employer: "GastroSaaS"
+    period: "2015–2019"
+    issuer_de: "Sandra Demo, Board Chair GastroSaaS"
+    issuer_en: "Sandra Demo, Board Chair GastroSaaS"
+    body_de: |
+      Herr Müller hat GastroSaaS gegründet und als Managing Director von der ersten Idee bis zum erfolgreichen Exit aufgebaut. In dieser Zeit war er nicht nur operativer und strategischer Kopf des Unternehmens, sondern auch der treibende Produktdenker hinter unserer Plattform.
+
+      Sein tiefstes Merkmal als Gründer war die Fähigkeit, direkt mit Restaurantbetreibern zu sprechen, ihre Herausforderungen im Alltag zu verstehen und diese Erkenntnisse sofort in Produktentscheidungen zu überführen. Er hat nie den Fehler gemacht, die eigene Meinung über das Nutzerfeedback zu stellen. Dieses Grundprinzip hat GastroSaaS von Anfang an auf einem soliden Nutzerbedürfnis aufgebaut.
+
+      Herr Müller hat ausserdem bewiesen, dass er ein Unternehmen aufbauen kann. Er hat unser Team strukturiert rekrutiert, eine Verkaufs- und Marketingstrategie entwickelt, strategische Partnerschaften verhandelt und das Unternehmen gleichzeitig durch mehrere Pivots navigiert, ohne das Team oder die Investoren zu verlieren.
+
+      Der Exit war das Ergebnis jahrelanger konsequenter Arbeit. Herr Müller hat die Übernahme professionell gestaltet, das Team dabei gut begleitet und dafür gesorgt, dass die Integration in die übernehmende Plattform reibungslos verlaufen ist.
+
+      Ich empfehle Alex Müller als Unternehmer, Produktdenker und Führungsperson ohne jede Einschränkung.
+    body_en: |
+      Alex Müller founded GastroSaaS and built it as Managing Director from first idea through to successful exit. In this period, he was not only the operational and strategic head of the company but also the driving product mind behind our platform.
+
+      His defining quality as a founder was the ability to speak directly with restaurant operators, understand their daily challenges and immediately translate these insights into product decisions. He never made the mistake of placing his own opinion above user feedback. This fundamental principle meant GastroSaaS was built from the start on a solid user need.
+
+      Alex also demonstrated that he can build a company. He recruited our team systematically, developed a sales and marketing strategy, negotiated strategic partnerships and navigated the company through several pivots without losing the team or investors.
+
+      The exit was the result of years of consistent work. Alex handled the acquisition professionally, supported the team well through the transition and ensured that integration into the acquiring platform was smooth.
+
+      I recommend Alex Müller as an entrepreneur, product thinker and leader without reservation.
+
+  - filename: "04_directorysaas_testimonial.md"
+    employer: "DirectorySaaS"
+    period: "2011–2015"
+    issuer_de: "Peter Beispielsen, Head of Product DirectorySaaS"
+    issuer_en: "Peter Beispielsen, Head of Product DirectorySaaS"
+    body_de: |
+      Herr Müller war von 2011 bis 2015 als Product Manager in unserem Team tätig und hat in dieser Zeit wesentlich zum Wachstum und zur Reife unserer Plattformorganisation beigetragen.
+
+      Besonders hervorzuheben ist Herrn Müllers Beitrag zur Lancierung unserer Mobile-App-Strategie. Er hat ein cross-funktionales Team durch den gesamten Zyklus von der Konzeption bis zum Launch geführt, dabei alle relevanten Stakeholder – Entwicklung, Design, Marketing und Vertrieb – eingebunden und den Launch termingerecht und innerhalb des Budgets realisiert.
+
+      Herr Müller hat uns ausserdem dabei geholfen, unsere Entscheidungsprozesse zu verbessern. Er hat Analyse-Frameworks eingeführt, die es uns erstmals ermöglichten, Produktentscheidungen konsequent auf Nutzungsdata zu stützen. Diese Grundlagen sind auch heute noch Teil unserer Produktarbeit.
+
+      Was Herrn Müller als Produktmanager ausgezeichnet hat, war seine Fähigkeit, technische Komplexität verständlich zu machen und gleichzeitig auf Geschäftsergebnisse fokussiert zu bleiben. Er hat Entwicklungsteams verstanden und respektiert, ohne sich in technischen Debatten zu verlieren.
+
+      Herrn Müllers weiteres Gründer-Engagement hat uns nicht überrascht. Die Qualitäten, die er als Product Manager gezeigt hat – Eigeninitiative, Nutzernähe, Führungsstärke – sind genau das, was einen erfolgreichen Unternehmer ausmacht. Wir wünschen ihm weiterhin viel Erfolg.
+    body_en: |
+      Alex Müller worked in our team as Product Manager from 2011 to 2015 and during this period contributed significantly to the growth and maturity of our product organisation.
+
+      Particularly noteworthy is Alex's contribution to the launch of our mobile app strategy. He led a cross-functional team through the entire cycle from concept through to launch, engaging all relevant stakeholders – engineering, design, marketing and sales – and delivering the launch on time and within budget.
+
+      Alex also helped us improve our decision-making processes. He introduced analytics frameworks that for the first time allowed us to base product decisions consistently on usage data. These foundations remain part of our product work to this day.
+
+      What distinguished Alex as a product manager was his ability to make technical complexity understandable while remaining focused on business outcomes. He understood and respected engineering teams without getting lost in technical debates.
+
+      Alex's subsequent founding activity did not surprise us. The qualities he demonstrated as a product manager – initiative, user proximity, leadership strength – are exactly what makes a successful entrepreneur. We wish him continued success.
