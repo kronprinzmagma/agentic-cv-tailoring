@@ -1,0 +1,29 @@
+# Secrets
+.env
+.env.local
+
+# Run artifacts
+runs/
+
+# Aggregated logs
+logs/
+
+# Local Playwright cache
+.cache/
+~/.cache/
+
+# Python build / cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Eval reports
+evals/reports/
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
