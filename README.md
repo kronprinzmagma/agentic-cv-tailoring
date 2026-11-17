@@ -12,14 +12,9 @@ A pipeline that presents documented, verifiable experience in the framing that f
 > factcheck step vetoes any claim it cannot trace to these documents. See
 > [Factual fidelity](#factual-fidelity-what-the-pipeline-cannot-do) below.
 
-<!-- HERO-VISUAL — bitte hier ein Bild einfügen (stärkster visueller Hebel):
-     Screenshot der lokalen Web-UI mit der Cost-Tracking-Statusbar sichtbar
-     ($-Betrag · Anzahl Calls · Cache-Hit-Rate · Per-Agent-Breakdown).
-     1. Bild ablegen unter  docs/screenshot-web-ui.png  (im privaten Repo;
-        Pfad zur Sync-Whitelist in scripts/sync_to_public.py hinzufügen).
-     2. Folgende Zeile einkommentieren:
-![cv-tailor Web-UI mit Cost-Tracking](docs/screenshot-web-ui.png)
--->
+![Staged cv-tailor UI: synthetic job posting, CV draft, pipeline stages and illustrative cost tracking](docs/screenshot-web-ui.png)
+
+*Staged UI demo with synthetic data and mocked run results. Cost, call and cache figures are illustrative, not a benchmark. [Visual provenance](docs/hero-visual.md).*
 
 ---
 
