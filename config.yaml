@@ -1,0 +1,57 @@
+writer_section_concurrency: 1
+writer_style_exemplars: 0
+output:
+  author_name: Alex Müller
+  cv_version_anchor: '000000'
+sources:
+  portfolio: ~/Projekte/Jobcoach/PORTFOLIO.md
+cost_limits:
+  daily_usd: 25
+agents:
+  analyst:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    reasoning_effort: medium
+    thinking_reserve_tokens: 8000
+  writer:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    reasoning_effort: medium
+    thinking_reserve_tokens: 8000
+  hiring_reviewer:
+    provider: openai
+    model: gpt-6-luna
+    reasoning_effort: none
+  coach_reviewer:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    reasoning_effort: medium
+    thinking_reserve_tokens: 8000
+  factcheck:
+    provider: anthropic
+    model: claude-haiku-5-5
+    reasoning_effort: medium
+    thinking_reserve_tokens: 8000
+  translator:
+    provider: openai
+    model: gpt-6-luna
+    reasoning_effort: none
+  diff:
+    provider: anthropic
+    model: claude-haiku-5-5
+    reasoning_effort: low
+    thinking_reserve_tokens: 8000
+  keyword_marker:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    reasoning_effort: medium
+    thinking_reserve_tokens: 8000
+  naturalisation:
+    provider: anthropic
+    model: claude-haiku-5-5
+    reasoning_effort: low
+    thinking_reserve_tokens: 8000
+  eval_judge:
+    provider: openai
+    model: gpt-6-luna
+    reasoning_effort: none
