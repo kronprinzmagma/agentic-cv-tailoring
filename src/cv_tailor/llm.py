@@ -1,0 +1,658 @@
+"""Central LLM abstraction layer.
+
+All agents call call_llm() — never litellm.completion directly.
+Handles config loading, JSONL logging, error logging, and snippet hashing.
+
+Einziger Engpass zu den Modellanbietern: vor jedem Aufruf laeuft die
+Ausgangssperre (``ausgangssperre.sperre_pruefen``). Ein Test stellt sicher,
+dass kein anderes Modul litellm, anthropic oder openai importiert.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import threading
+import time
+import traceback
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import litellm
+import yaml
+
+from cv_tailor.ausgangssperre import AusgangGesperrt, sperre_pruefen
+from cv_tailor.cost_tracking import (
+    DailyCostLimitExceeded,
+    check_daily_limit,
+    estimate_cost_usd,
+    resolve_daily_limit,
+)
+from cv_tailor.logging_config import get_logger
+
+log = get_logger(__name__)
+
+SNIPPET_LOG_MAX = 200   # chars considered for hashing only; raw snippets are never logged
+CONFIG_PATH = Path("config.yaml")
+# Timeout pro Aufruf (Idee 48, 2026-11-23). Ohne Angabe wartet LiteLLM bis
+# 6000 s: ein haengender Anbieter blockierte einen Lauf bis 100 Minuten. 300 s
+# ist die obere Grenze des vorgeschlagenen Bereichs (180-300 s), damit ein langer
+# Writer-Aufruf mit Denk-Reserve nicht abbricht. Ein Timeout wird genau einmal
+# wiederholt. Wert in config.yaml unter llm.timeout_s.
+DEFAULT_TIMEOUT_S = 300
+TIMEOUT_MIN_S = 30
+TIMEOUT_MAX_S = 1800
+TIMEOUT_RETRIES = 1
+# Anbieter, die lokal laufen und nichts kosten: 0 USD ist dort kein fehlender Preis.
+LOCAL_PROVIDERS = {"ollama", "ollama_chat"}
+PROVIDER_ENV_VARS = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+}
+
+
+# Fehler, die kein Aufrufer in einen Fallback umdeuten darf (Idee 47, 2026-11-23):
+# gesperrte Ausgabe, erreichtes Tageslimit, falscher oder gesperrter API-Schluessel.
+# Wer call_llm mit breitem ``except`` umschliesst, wirft diese weiter. Hier
+# definiert, weil nur llm.py litellm importieren darf.
+ABBRUCH_FEHLER: tuple[type[BaseException], ...] = (
+    AusgangGesperrt,
+    DailyCostLimitExceeded,
+    litellm.AuthenticationError,
+    litellm.PermissionDeniedError,
+)
+
+
+# ---------------------------------------------------------------------------
+# Private helpers
+# ---------------------------------------------------------------------------
+
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _llm_log_path() -> Path:
+    month = datetime.now(UTC).strftime("%Y-%m")
+    p = Path("logs") / month / "llm_calls.jsonl"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _error_log_path() -> Path:
+    month = datetime.now(UTC).strftime("%Y-%m")
+    p = Path("logs") / month / "errors.jsonl"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+_log_lock = threading.Lock()
+
+# ---------------------------------------------------------------------------
+# In-process caches (config + prompts) — valid for the lifetime of one process.
+# These files never change during a run, so caching is safe.
+#
+# Dev-Mode: set CV_TAILOR_DEV_RELOAD=1 to invalidate cached prompts when
+# their mtime advances. Saves a server restart on every prompt edit
+# during iteration. Production-Mode (default) keeps the lifetime cache —
+# zero stat() overhead per call.
+# ---------------------------------------------------------------------------
+_config_cache: dict[str, dict] = {}              # key: "<config_path>::<agent_name>"
+_prompt_cache: dict[str, tuple[float, str]] = {}  # key: abs path → (mtime, content)
+
+
+def load_prompt(path: Path) -> str:
+    """Read and cache a prompt file. Raises FileNotFoundError if missing.
+
+    Honours CV_TAILOR_DEV_RELOAD=1 by invalidating the cache when the
+    file's mtime moves forward.
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"Prompt not found: {path}")
+    key = str(path.resolve())
+    dev_reload = os.environ.get("CV_TAILOR_DEV_RELOAD") == "1"
+    if key in _prompt_cache and not dev_reload:
+        return _prompt_cache[key][1]
+    current_mtime = path.stat().st_mtime
+    if key in _prompt_cache and _prompt_cache[key][0] >= current_mtime:
+        return _prompt_cache[key][1]
+    content = path.read_text(encoding="utf-8")
+    _prompt_cache[key] = (current_mtime, content)
+    return content
+
+
+def _append_jsonl(path: Path, record: dict) -> None:
+    line = json.dumps(record, ensure_ascii=False) + "\n"
+    with _log_lock, path.open("a", encoding="utf-8") as fh:
+        fh.write(line)
+
+
+# ---------------------------------------------------------------------------
+# Config loader
+# ---------------------------------------------------------------------------
+
+def load_agent_config(agent_name: str, config_path: Path = CONFIG_PATH) -> dict:
+    """Return {"provider": ..., "model": ...} for the named agent from config.yaml.
+
+    Result is cached in-process — config.yaml never changes during a run, so
+    the YAML parse cost (called 20+ times per run) is paid only once per agent.
+
+    Raises:
+        FileNotFoundError: If config.yaml is missing.
+        ValueError: If agent_name not found or missing provider/model.
+    """
+    cache_key = f"{config_path}::{agent_name}"
+    if cache_key in _config_cache:
+        return _config_cache[cache_key]
+    if not config_path.exists():
+        raise FileNotFoundError(f"config.yaml not found at {config_path}")
+    cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    agents = (cfg or {}).get("agents", {})
+    agent_cfg = agents.get(agent_name)
+    if not agent_cfg:
+        raise ValueError(
+            f"Agent '{agent_name}' not found in config.yaml. "
+            f"Available agents: {list(agents.keys())}"
+        )
+    if "provider" not in agent_cfg or "model" not in agent_cfg:
+        raise ValueError(
+            f"config.yaml: agents.{agent_name} must have both 'provider' and 'model' keys. "
+            f"Got: {list(agent_cfg.keys())}"
+        )
+    result = {"provider": agent_cfg["provider"], "model": agent_cfg["model"]}
+    # Optional: Denktiefe fuer Reasoning-Modelle (z. B. gpt-6-luna). Bleibt
+    # eine reine Config-Angabe; fehlt sie, gilt der Default des Modells.
+    if agent_cfg.get("reasoning_effort"):
+        result["reasoning_effort"] = str(agent_cfg["reasoning_effort"])
+    # Optional: Reserve fuer Denk-Tokens. Claude 5.5 denkt immer (adaptiv) und
+    # die Denk-Tokens zaehlen zu max_tokens; ohne Reserve schnitt der
+    # Demo-Lauf Analyse, Writer und Faktencheck ab (Agent-Eval 2026-11-19).
+    if agent_cfg.get("thinking_reserve_tokens"):
+        result["thinking_reserve_tokens"] = int(agent_cfg["thinking_reserve_tokens"])
+    _config_cache[cache_key] = result
+    return result
+
+
+_cost_limit_cfg_cache: dict[str, dict] = {}  # key: str(config_path) → parsed config
+
+
+def _raw_config(config_path: Path = CONFIG_PATH) -> dict:
+    """Ganze config.yaml, einmal pro Pfad und Prozess geparst."""
+    key = str(config_path)
+    if key not in _cost_limit_cfg_cache:
+        cfg: dict = {}
+        if config_path.exists():
+            cfg = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+        _cost_limit_cfg_cache[key] = cfg if isinstance(cfg, dict) else {}
+    return _cost_limit_cfg_cache[key]
+
+
+def _daily_cost_limit(config_path: Path = CONFIG_PATH) -> float | None:
+    """Daily USD limit for LLM calls (env var wins over config.yaml).
+
+    The parsed config is cached per path; the env var is read on every call
+    so a test or a shell can switch the limit without restarting.
+    """
+    return resolve_daily_limit(_raw_config(config_path))
+
+
+def _llm_timeout_s(config_path: Path = CONFIG_PATH) -> float:
+    """Timeout pro Aufruf aus ``llm.timeout_s``; ungueltig oder fehlend = Standard."""
+    llm_cfg = _raw_config(config_path).get("llm") or {}
+    raw = llm_cfg.get("timeout_s") if isinstance(llm_cfg, dict) else None
+    if raw is None:
+        return DEFAULT_TIMEOUT_S
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        value = -1.0
+    if not TIMEOUT_MIN_S <= value <= TIMEOUT_MAX_S:
+        log.warning("call_llm.invalid_timeout", value=str(raw), default=DEFAULT_TIMEOUT_S)
+        return DEFAULT_TIMEOUT_S
+    return int(value) if value.is_integer() else value
+
+
+def validate_llm_environment(config_path: Path = CONFIG_PATH) -> list[str]:
+    """Return human-readable configuration problems for required LLM providers."""
+    if not config_path.exists():
+        return [f"config.yaml nicht gefunden: {config_path}"]
+
+    cfg = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    agents = cfg.get("agents", {})
+    providers = {
+        str(agent_cfg.get("provider", "")).strip().lower()
+        for agent_cfg in agents.values()
+        if isinstance(agent_cfg, dict)
+    }
+
+    problems: list[str] = []
+    for provider in sorted(providers):
+        env_var = PROVIDER_ENV_VARS.get(provider)
+        if env_var is None:
+            log.warning("validate_llm_environment.unknown_provider", provider=provider)
+            continue
+        value = os.getenv(env_var, "").strip()
+        if not value or "REPLACE_ME" in value or value.endswith("_ME"):
+            problems.append(f"{env_var} fehlt oder enthält noch einen Platzhalter")
+    return problems
+
+
+def require_llm_environment(config_path: Path = CONFIG_PATH) -> None:
+    """Raise RuntimeError if required LLM API keys are missing or placeholders."""
+    problems = validate_llm_environment(config_path)
+    if problems:
+        details = "; ".join(problems)
+        raise RuntimeError(
+            "LLM-Konfiguration unvollständig. Bitte .env aus .env.example erstellen "
+            f"und echte API-Keys setzen: {details}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Message preparation
+# ---------------------------------------------------------------------------
+
+def _prepare_messages_for_provider(messages: list[dict], provider: str) -> list[dict]:
+    """Adapt message format to the target provider.
+
+    Anthropic — prompt caching:
+      - String system prompts are wrapped in a content array with
+        ``cache_control: {type: ephemeral}`` so Anthropic caches the system
+        prompt across calls that share the same prefix.
+      - User messages that are already content arrays (list of dicts) are left
+        as-is; callers may include ``cache_control`` blocks for large static
+        context (e.g. beleg_index, analyse) to extend the cache prefix.
+
+    Other providers (OpenAI etc.) — flatten:
+      - Content arrays are flattened back to plain strings. ``cache_control``
+        is stripped because those providers reject unknown keys.
+    """
+    result: list[dict] = []
+    for msg in messages:
+        content = msg.get("content")
+        if provider == "anthropic":
+            if msg.get("role") == "system" and isinstance(content, str):
+                msg = {
+                    **msg,
+                    "content": [
+                        {"type": "text", "text": content, "cache_control": {"type": "ephemeral"}}
+                    ],
+                }
+        else:
+            # Flatten list-of-dicts content to a plain string for non-Anthropic providers.
+            if isinstance(content, list):
+                text = "\n".join(
+                    block.get("text", "")
+                    for block in content
+                    if isinstance(block, dict) and block.get("type") == "text"
+                )
+                msg = {**msg, "content": text}
+        result.append(msg)
+    return result
+
+
+def _accepts_temperature(model: str, litellm_model: str, reasoning_effort: str | None) -> bool:
+    """True, wenn das Modell einen Temperatur-Parameter annimmt.
+
+    - Claude ab 4.x lehnt ``temperature`` ab (5.5: jeder Nicht-Default-Wert 400).
+    - OpenAI-Reasoning-Modelle (gpt-6-luna u. a.) akzeptieren ``temperature=0``
+      nur mit ``reasoning_effort: none``; sonst lehnt LiteLLM den Aufruf ab.
+    """
+    is_claude4 = model.startswith("claude-") and not any(
+        x in model for x in ["-3-", "-haiku-3", "-sonnet-3", "claude-2", "claude-1"]
+    )
+    if is_claude4:
+        return False
+    if reasoning_effort == "none":
+        return True
+    try:
+        return not litellm.supports_reasoning(model=litellm_model)
+    except Exception:  # unbekanntes Modell: bisheriges Verhalten beibehalten
+        return True
+
+
+# ---------------------------------------------------------------------------
+# Main public function
+# ---------------------------------------------------------------------------
+
+def call_llm(
+    *,
+    agent: str,
+    phase: str,
+    run_id: str,
+    messages: list[dict],
+    temperature: float = 0,
+    max_tokens: int = 1024,
+    iteration: int = 0,
+    snippet_text: str = "",   # raw snippet for hashing/preview — never logged as-is
+    config_path: Path = CONFIG_PATH,
+    meta_out: dict[str, Any] | None = None,
+    response_format: dict[str, Any] | None = None,
+) -> str:
+    """Call LiteLLM, log to llm_calls.jsonl, return response content string.
+
+    ``response_format`` (optional): JSON-Schema im OpenAI-Format
+    (``{"type": "json_schema", "json_schema": {...}}``); das Modell kann dann
+    nur in diesem Format antworten (Faktencheck).
+
+    ``meta_out`` (optional): a caller-owned dict that receives response
+    metadata on success — ``finish_reason``, ``truncated`` (bool) and
+    ``output_tokens``. Callers whose parser falls back to "clean" on
+    unparseable output (factcheck) use it to refuse a truncated answer
+    instead of reading it as a verdict. Kept as an out-parameter so the
+    return type — and every test that mocks ``call_llm`` with a plain
+    string — stays unchanged.
+
+    Loads agent config (provider + model) from config.yaml, calls LiteLLM,
+    appends a JSONL record to logs/YYYY-MM/llm_calls.jsonl on every call
+    (success or failure), and appends an additional record to errors.jsonl
+    on failure with full stack trace.
+
+    Rate limit handling: retries up to 3 times with exponential backoff
+    (10s, 20s, 40s) on RateLimitError. Timeout (``llm.timeout_s`` in
+    config.yaml, default 300 s) is retried once. All other exceptions are
+    logged and re-raised immediately without retry.
+
+    Unknown price (LiteLLM reports None or 0 for a cloud model): the cost is
+    estimated conservatively from tokens and logged with ``cost_estimated``,
+    so the daily limit still counts the call.
+
+    Args:
+        agent: Agent name matching an entry in config.yaml agents section.
+        phase: Phase identifier, e.g. "phase2_bootstrap" or "phase3_analyse".
+        run_id: Run identifier, e.g. "bootstrap" or a run slug.
+        messages: List of {"role": ..., "content": ...} dicts for LiteLLM.
+        temperature: Sampling temperature (default 0 for deterministic output).
+        max_tokens: Maximum tokens in response (default 1024).
+        iteration: Iteration counter within a multi-step agent loop (default 0).
+        snippet_text: Raw snippet for hashing only. The raw text is never logged.
+            Pass "" if no snippet context.
+        config_path: Path to config.yaml (default CONFIG_PATH).
+
+    Returns:
+        Response content string from the LLM.
+
+    Cost guardrail: before the call, today's spend (UTC, from the JSONL
+    logs) is compared with the daily limit (``cost_limits.daily_usd`` in
+    config.yaml or env ``CV_TAILOR_DAILY_COST_LIMIT_USD``). Reaching it
+    raises ``DailyCostLimitExceeded`` without calling the provider.
+
+    Raises:
+        FileNotFoundError: If config.yaml is missing.
+        ValueError: If agent config is missing/incomplete.
+        DailyCostLimitExceeded: If today's LLM spend has reached the daily limit.
+        AusgangGesperrt: If the prompt contains protected data (AHV, IBAN, card,
+            birth date, secret, local denylist). Nothing is sent.
+        litellm.RateLimitError: If all retries are exhausted.
+        Any other exception raised by litellm.completion is re-raised after logging.
+    """
+    agent_cfg = load_agent_config(agent, config_path)
+    provider = agent_cfg["provider"]
+    model = agent_cfg["model"]
+    litellm_model = f"{provider}/{model}"
+
+    # Ausgangssperre: geschuetzte Daten im Prompt brechen ab, bevor etwas
+    # gesendet wird. Fehlermeldung und Log nennen nur die Art, nie den Wert.
+    try:
+        sperre_pruefen(messages, agent=agent)
+    except AusgangGesperrt as exc:
+        _append_jsonl(_error_log_path(), {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "run_id": run_id,
+            "agent": agent,
+            "phase": phase,
+            "error": f"{type(exc).__name__}: {exc}",
+            "stack_trace": "",
+            "snippet_hash": "",
+            "snippet_chars": 0,
+        })
+        log.error(
+            "call_llm.ausgangssperre",
+            agent=agent, phase=phase, run_id=run_id,
+            arten=sorted({f.art for f in exc.funde}),
+        )
+        raise
+
+    # Tageslimit vor dem Call pruefen: ein Ueberschreiten bricht den Lauf ab,
+    # bevor ein weiterer kostenpflichtiger Call rausgeht.
+    try:
+        check_daily_limit(_daily_cost_limit(config_path))
+    except DailyCostLimitExceeded as exc:
+        _append_jsonl(_error_log_path(), {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "run_id": run_id,
+            "agent": agent,
+            "phase": phase,
+            "error": f"{type(exc).__name__}: {exc}",
+            "stack_trace": "",
+            "snippet_hash": "",
+            "snippet_chars": 0,
+        })
+        log.error("call_llm.daily_cost_limit", agent=agent, phase=phase, run_id=run_id)
+        raise
+
+    snippet_hash = _sha256(snippet_text[:SNIPPET_LOG_MAX]) if snippet_text else ""
+    snippet_chars = len(snippet_text) if snippet_text else 0
+
+    # Retry configuration for rate-limit errors (429).
+    # Exponential backoff: 10s, 20s, 40s — covers Tier-1 token-per-minute windows.
+    _RETRY_DELAYS = [10, 20, 40]
+
+    t0 = time.monotonic()
+    prepared = _prepare_messages_for_provider(messages, provider)
+    reserve = int(agent_cfg.get("thinking_reserve_tokens") or 0)
+    call_kwargs: dict[str, Any] = {
+        "model": litellm_model,
+        "messages": prepared,
+        "max_tokens": max_tokens + reserve,
+        "timeout": _llm_timeout_s(config_path),
+    }
+    if response_format is not None:
+        # Festes Antwortformat (JSON-Schema); LiteLLM setzt es bei Anthropic als
+        # natives Structured Output um, bei OpenAI als response_format.
+        call_kwargs["response_format"] = response_format
+    reasoning_effort = agent_cfg.get("reasoning_effort")
+    if reasoning_effort:
+        call_kwargs["reasoning_effort"] = reasoning_effort
+    if _accepts_temperature(model, litellm_model, reasoning_effort):
+        call_kwargs["temperature"] = temperature
+
+    last_exc: Exception | None = None
+    timeouts = 0
+    attempt = 0
+    delays = list(_RETRY_DELAYS)
+    while True:
+        try:
+            resp = litellm.completion(**call_kwargs)
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            usage = getattr(resp, "usage", None)
+            input_tokens = getattr(usage, "prompt_tokens", 0) if usage else 0
+            output_tokens = getattr(usage, "completion_tokens", 0) if usage else 0
+            # Anthropic prompt-cache metrics — exposed via litellm as either
+            # top-level attrs on usage or nested in usage["cache_read_input_tokens"].
+            # When >0 we know the static prefix actually hit cache; when 0 across
+            # multiple calls with the same prefix, caching is silently broken.
+            cache_read = 0
+            cache_creation = 0
+            if usage is not None:
+                cache_read = (
+                    getattr(usage, "cache_read_input_tokens", None)
+                    or getattr(usage, "prompt_cache_hit_tokens", None)
+                    or 0
+                )
+                cache_creation = (
+                    getattr(usage, "cache_creation_input_tokens", None)
+                    or getattr(usage, "prompt_cache_miss_tokens", None)
+                    or 0
+                )
+                if not cache_read and isinstance(usage, dict):
+                    cache_read = usage.get("cache_read_input_tokens", 0)
+                    cache_creation = usage.get("cache_creation_input_tokens", 0)
+            cost = float(getattr(resp, "_hidden_params", {}).get("response_cost") or 0.0)
+            # Unbekannter Preis (LiteLLM liefert None oder 0): konservativ aus den
+            # Tokens schaetzen, sonst zaehlt der Aufruf nicht fuers Tageslimit.
+            cost_estimated = False
+            if (
+                cost <= 0
+                and provider not in LOCAL_PROVIDERS
+                and (input_tokens or output_tokens)
+            ):
+                cost = estimate_cost_usd(input_tokens, output_tokens)
+                cost_estimated = True
+                log.warning(
+                    "call_llm.cost_estimated",
+                    agent=agent, model=litellm_model, cost_usd=round(cost, 6),
+                )
+            # Truncation sichtbar machen: bei finish_reason/stop_reason == "length"
+            # wurde die Antwort wegen max_tokens abgeschnitten. Stiller Verlust
+            # (z.B. abgeschnittenes JSON beim keyword_marker -> leere Struktur)
+            # wird so im Log erkennbar; die Fallback-Semantik bleibt unveraendert.
+            finish_reason = (
+                getattr(resp.choices[0], "finish_reason", None)
+                or getattr(resp.choices[0], "stop_reason", None)
+            )
+            truncated = finish_reason in ("length", "max_tokens")
+            _append_jsonl(_llm_log_path(), {
+                "timestamp": datetime.now(UTC).isoformat(),
+                "run_id": run_id,
+                "agent": agent,
+                "provider": provider,
+                "model": model,
+                "phase": phase,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cache_read_input_tokens": int(cache_read or 0),
+                "cache_creation_input_tokens": int(cache_creation or 0),
+                "cost_usd": cost,
+                "cost_estimated": cost_estimated,
+                "duration_ms": duration_ms,
+                "status": "success",
+                "truncated": truncated,
+                "error": None,
+                "iteration": iteration,
+                "snippet_hash": snippet_hash,
+                "snippet_chars": snippet_chars,
+            })
+            if truncated:
+                log.warning(
+                    "call_llm.response_truncated",
+                    agent=agent,
+                    phase=phase,
+                    run_id=run_id,
+                    finish_reason=finish_reason,
+                    max_tokens=max_tokens,
+                )
+            if meta_out is not None:
+                meta_out.update(
+                    finish_reason=finish_reason,
+                    truncated=truncated,
+                    output_tokens=output_tokens,
+                )
+            return resp.choices[0].message.content or ""
+        except litellm.RateLimitError as exc:
+            last_exc = exc
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            err_str = f"{type(exc).__name__}: {exc}"
+            _append_jsonl(_llm_log_path(), {
+                "timestamp": datetime.now(UTC).isoformat(),
+                "run_id": run_id,
+                "agent": agent,
+                "provider": provider,
+                "model": model,
+                "phase": phase,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost_usd": 0.0,
+                "duration_ms": duration_ms,
+                "status": "rate_limit",
+                "error": err_str,
+                "iteration": iteration,
+                "snippet_hash": snippet_hash,
+                "snippet_chars": snippet_chars,
+            })
+            # Retry if attempts remain; otherwise fall through to raise below.
+            if not delays:
+                break
+            wait_s = delays.pop(0)
+            attempt += 1
+            log.warning(
+                "call_llm.rate_limit_retry",
+                agent=agent, attempt=attempt, wait_s=wait_s,
+            )
+            time.sleep(wait_s)
+        except litellm.Timeout as exc:
+            # Haengender Anbieter: genau eine Wiederholung, dann Abbruch.
+            last_exc = exc
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            _append_jsonl(_llm_log_path(), {
+                "timestamp": datetime.now(UTC).isoformat(),
+                "run_id": run_id,
+                "agent": agent,
+                "provider": provider,
+                "model": model,
+                "phase": phase,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost_usd": 0.0,
+                "duration_ms": duration_ms,
+                "status": "timeout",
+                "error": f"{type(exc).__name__}: {exc}",
+                "iteration": iteration,
+                "snippet_hash": snippet_hash,
+                "snippet_chars": snippet_chars,
+            })
+            if timeouts >= TIMEOUT_RETRIES:
+                break
+            timeouts += 1
+            log.warning(
+                "call_llm.timeout_retry",
+                agent=agent, timeout_s=call_kwargs["timeout"],
+            )
+        except Exception as exc:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            err_str = f"{type(exc).__name__}: {exc}"
+            _append_jsonl(_llm_log_path(), {
+                "timestamp": datetime.now(UTC).isoformat(),
+                "run_id": run_id,
+                "agent": agent,
+                "provider": provider,
+                "model": model,
+                "phase": phase,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost_usd": 0.0,
+                "duration_ms": duration_ms,
+                "status": "error",
+                "error": err_str,
+                "iteration": iteration,
+                "snippet_hash": snippet_hash,
+                "snippet_chars": snippet_chars,
+            })
+            _append_jsonl(_error_log_path(), {
+                "timestamp": datetime.now(UTC).isoformat(),
+                "run_id": run_id,
+                "agent": agent,
+                "phase": phase,
+                "error": err_str,
+                "stack_trace": traceback.format_exc(),
+                "snippet_hash": snippet_hash,
+                "snippet_chars": snippet_chars,
+            })
+            raise
+
+    # Rate-limit- oder Timeout-Wiederholungen erschoepft: errors.jsonl, weiterwerfen.
+    # Ausserhalb des except-Blocks liefert format_exc() nur «NoneType: None»,
+    # darum der Traceback aus der Ausnahme selbst.
+    assert last_exc is not None
+    err_str = f"{type(last_exc).__name__}: {last_exc}"
+    _append_jsonl(_error_log_path(), {
+        "timestamp": datetime.now(UTC).isoformat(),
+        "run_id": run_id,
+        "agent": agent,
+        "phase": phase,
+        "error": err_str,
+        "stack_trace": "".join(traceback.format_exception(last_exc)),
+        "snippet_hash": snippet_hash,
+        "snippet_chars": snippet_chars,
+    })
+    raise last_exc

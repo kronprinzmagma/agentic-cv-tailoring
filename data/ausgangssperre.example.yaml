@@ -1,0 +1,24 @@
+# Vorlage fuer die lokale Verbotsliste der Ausgangssperre.
+#
+# Kopieren nach data/ausgangssperre.local.yaml (gitignored) und mit den eigenen
+# Werten fuellen. Jeder Modellaufruf wird vor dem Senden darauf geprueft; ein
+# Treffer bricht den Aufruf ab. Die Fehlermeldung nennt nur die «art», nie den Wert.
+#
+# Fest eingebaut (keine Eintraege noetig): AHV-Nummern, IBAN, Kreditkarten,
+# Geburtsdaten, API-Keys. Hier gehoert hin, was nur fuer dich geschuetzt ist,
+# z. B. Privatadresse und private Telefonnummer. Der Kontaktblock des
+# Standard-CV wird vor dem Senden ohnehin entfernt; die Liste faengt den Rest.
+#
+# Abgleich: Gross-/Kleinschreibung und Leerzeichen egal; bei Nummern zaehlen
+# nur die Ziffern (+41 79 000 11 22 trifft auch +41-79-000-11-22).
+# Varianten (z. B. 079 … und +41 79 …) einzeln eintragen. Mindestens 4 Zeichen.
+# Andere Datei: Umgebungsvariable CV_TAILOR_AUSGANGSSPERRE_LISTE.
+
+verboten:
+  - { wert: "Musterweg 7", art: Privatadresse }
+  - { wert: "+41 79 000 11 22", art: Telefon privat }
+  - { wert: "079 000 11 22", art: Telefon privat }
+
+# Bekannte Fehlalarme: exakt der gefundene Text (z. B. das Spendenkonto einer
+# Firma in einer Stellenanzeige). Sparsam verwenden.
+erlaubt: []
